@@ -1,108 +1,73 @@
-import * as fs from "fs"
+import antfu from '@antfu/eslint-config';
+import eslintPluginBetterTailwindcss from 'eslint-plugin-better-tailwindcss';
+import playwright from 'eslint-plugin-playwright';
+import storybook from 'eslint-plugin-storybook';
 
-// https://github.com/francoismassart/eslint-plugin-tailwindcss/pull/381
-// import eslintPluginTailwindcss from "eslint-plugin-tailwindcss"
-import eslintPluginImport from "eslint-plugin-import"
-import eslintPluginNext from "@next/eslint-plugin-next"
-import eslintPluginStorybook from "eslint-plugin-storybook"
-import typescriptEslint from "typescript-eslint"
-
-const eslintIgnore = [
-  ".git/",
-  ".next/",
-  "node_modules/",
-  "dist/",
-  "build/",
-  "coverage/",
-  "*.min.js",
-  "*.config.js",
-  "*.d.ts",
-]
-
-const config = typescriptEslint.config(
+export default antfu(
   {
-    ignores: eslintIgnore,
-  },
-  ...eslintPluginStorybook.configs["flat/recommended"],
-  //  https://github.com/francoismassart/eslint-plugin-tailwindcss/pull/381
-  // ...eslintPluginTailwindcss.configs["flat/recommended"],
-  typescriptEslint.configs.recommended,
-  eslintPluginImport.flatConfigs.recommended,
-  {
-    plugins: {
-      "@next/next": eslintPluginNext,
+    react: true,
+    nextjs: true,
+    typescript: true,
+
+    // Configuration preferences
+    lessOpinionated: true,
+    isInEditor: false,
+
+    // Code style
+    stylistic: {
+      semi: true,
     },
-    rules: {
-      ...eslintPluginNext.configs.recommended.rules,
-      ...eslintPluginNext.configs["core-web-vitals"].rules,
+
+    // Format settings
+    formatters: {
+      /**
+       * Format CSS, LESS, SCSS files, also the `<style>` blocks in Vue
+       * By default uses Prettier
+       */
+      css: true,
     },
+
+    // Ignored paths
+    ignores: [
+      '.alchemy/**/*',
+      'migrations/**/*',
+    ],
   },
+  // --- Tailwind CSS Rules ---
+  eslintPluginBetterTailwindcss.configs.recommended,
   {
     settings: {
-      tailwindcss: {
-        callees: ["classnames", "clsx", "ctl", "cn", "cva"],
-      },
-
-      "import/resolver": {
-        typescript: true,
-        node: true,
+      'better-tailwindcss': {
+        // tailwindcss 4: the path to the entry file of the css based tailwind config (eg: `src/global.css`)
+        entryPoint: 'src/styles/global.css',
       },
     },
+  },
+  // --- E2E Testing Rules ---
+  {
+    files: [
+      '**/*.integ.ts',
+      '**/*.e2e.ts',
+    ],
+    ...playwright.configs['flat/recommended'],
+  },
+  // --- Storybook Rules ---
+  ...storybook.configs['flat/recommended'],
+  // --- Custom Rule Overrides ---
+  {
     rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
-      ],
-      "sort-imports": [
-        "error",
-        {
-          ignoreCase: true,
-          ignoreDeclarationSort: true,
-        },
-      ],
-      "import/order": [
-        "warn",
-        {
-          groups: ["external", "builtin", "internal", "sibling", "parent", "index"],
-          pathGroups: [
-            ...getDirectoriesToSort().map((singleDir) => ({
-              pattern: `${singleDir}/**`,
-              group: "internal",
-            })),
-            {
-              pattern: "env",
-              group: "internal",
-            },
-            {
-              pattern: "theme",
-              group: "internal",
-            },
-            {
-              pattern: "public/**",
-              group: "internal",
-              position: "after",
-            },
-          ],
-          pathGroupsExcludedImportTypes: ["internal"],
-          alphabetize: {
-            order: "asc",
-            caseInsensitive: true,
-          },
-        },
-      ],
+      'antfu/no-top-level-await': 'off', // Allow top-level await
+      'style/brace-style': ['error', '1tbs'], // Use the default brace style
+      'ts/consistent-type-definitions': ['error', 'type'], // Use `type` instead of `interface`
+      'react/purity': 'off', // Allow intentional impure render logic when needed
+      'react/prefer-destructuring-assignment': 'off', // Vscode doesn't support automatically destructuring, it's a pain to add a new variable
+      'react-hooks/incompatible-library': 'off', // Disable warning for compilation skipped
+      'react-hooks/exhaustive-deps': 'off', // Disable exhaustive-deps in useEffect
+      'node/prefer-global/process': 'off', // Allow using `process.env`
+      'test/padding-around-all': 'error', // Add padding in test files
+      'test/prefer-lowercase-title': 'off', // Allow using uppercase titles in test titles
+      'jsdoc/require-jsdoc': 'off', // JSDoc comments are optional
+      'jsdoc/require-returns': 'off', // Return types are optional
     },
-  }
-)
-
-function getDirectoriesToSort() {
-  const ignoredSortingDirectories = [".git", ".next", ".vscode", "node_modules"]
-  return fs
-    .readdirSync(process.cwd())
-    .filter((file) => fs.statSync(process.cwd() + "/" + file).isDirectory())
-    .filter((f) => !ignoredSortingDirectories.includes(f))
-}
-
-export default config
+  },
+);
